@@ -1,0 +1,985 @@
+<title>股務作業站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f1e2; --surface:#fffdf8; --surface-2:#eee6d1; --border:#ddd0b0;
+    --ink:#262a1f; --ink-2:#5c5f4c; --ink-3:#8b8a74;
+    --navy:#4f6a35; --navy-2:#374b22; --on-navy:#f7f2e2;
+    --seal:#a15c30; --seal-soft:#f1e0cf;
+    --gold:#b9812c; --gold-soft:#f3e6c8;
+    --good:#2d7d6e; --good-soft:#dcefe9;
+    --warn:#b8862c; --warn-soft:#f5e8cd;
+    --bad:#b23b3b; --bad-soft:#f6dede;
+    --sidebar-bg:#2b3320; --sidebar-ink:#f3ecd8; --sidebar-ink-muted:#b9c0a0; --sidebar-active:#3c4a2b;
+    --sidebar-accent:#d99a5c;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(38,32,20,.07), 0 6px 20px -8px rgba(38,32,20,.2);
+    --font-display:'Noto Serif TC','PMingLiU',serif;
+    --font-body:'Noto Sans TC','Microsoft JhengHei',-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14170f; --surface:#1c2016; --surface-2:#242a1c; --border:#333a26;
+      --ink:#e9e6d8; --ink-2:#aeb39a; --ink-3:#7c8069;
+      --navy:#8fae5e; --navy-2:#6a8a45; --on-navy:#12160c;
+      --seal:#d99a6a; --seal-soft:#3a2a1a;
+      --gold:#d9b25c; --gold-soft:#3a3120;
+      --good:#5fbfa8; --good-soft:#1c332c;
+      --warn:#e0aa4c; --warn-soft:#3a2f18;
+      --bad:#e0736a; --bad-soft:#3a2020;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 24px -8px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14170f; --surface:#1c2016; --surface-2:#242a1c; --border:#333a26;
+    --ink:#e9e6d8; --ink-2:#aeb39a; --ink-3:#7c8069;
+    --navy:#8fae5e; --navy-2:#6a8a45; --on-navy:#12160c;
+    --seal:#d99a6a; --seal-soft:#3a2a1a;
+    --gold:#d9b25c; --gold-soft:#3a3120;
+    --good:#5fbfa8; --good-soft:#1c332c;
+    --warn:#e0aa4c; --warn-soft:#3a2f18;
+    --bad:#e0736a; --bad-soft:#3a2020;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 24px -8px rgba(0,0,0,.55);
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.55; }
+  h1,h2,h3{ font-family:var(--font-display); text-wrap:balance; margin:0; color:var(--navy); }
+  p{ margin:0; }
+  button,input,select,textarea{ font-family:inherit; font-size:inherit; color:inherit; }
+  *:focus-visible{ outline:2px solid var(--navy); outline-offset:2px; }
+
+  .app{ display:flex; height:100%; }
+
+  /* sidebar */
+  .sidebar{ width:236px; flex:0 0 236px; background:var(--sidebar-bg); color:var(--sidebar-ink); display:flex; flex-direction:column; padding:20px 14px; overflow:hidden; position:relative; }
+  .sidebar-scroll{ display:flex; flex-direction:column; flex:1; min-height:0; overflow-y:auto; position:relative; z-index:1; }
+  .wc-flourish{ position:absolute; pointer-events:none; z-index:0; }
+  .wc-flourish-sidebar{ top:-18px; right:-46px; width:220px; height:auto; opacity:.85; }
+  .brand{ display:flex; align-items:center; gap:10px; padding:4px 6px 22px; }
+  .brand-mark{ width:38px; height:38px; border-radius:50%; background:radial-gradient(circle at 34% 30%, var(--sidebar-accent), transparent 72%), var(--sidebar-active); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:900; font-size:15px; color:var(--sidebar-ink); flex:0 0 auto; }
+  .brand-text strong{ font-family:var(--font-display); font-size:16px; color:var(--sidebar-ink); display:block; }
+  .brand-sub{ font-size:11.5px; color:var(--sidebar-ink-muted); }
+  .nav-list{ display:flex; flex-direction:column; gap:2px; }
+  .nav-item{ display:flex; align-items:center; gap:10px; background:none; border:none; color:var(--sidebar-ink-muted); padding:10px 12px; border-radius:8px; cursor:pointer; text-align:left; }
+  .nav-item svg{ flex:0 0 auto; }
+  .nav-item:hover{ background:var(--sidebar-active); color:var(--sidebar-ink); }
+  .nav-item.active{ background:var(--sidebar-active); color:var(--sidebar-ink); font-weight:700; }
+  .sidebar-foot{ margin-top:auto; font-size:11px; color:var(--sidebar-ink-muted); padding:14px 6px 0; line-height:1.5; }
+
+  .main{ flex:1 1 auto; overflow-y:auto; min-width:0; }
+  .page-header{ padding:22px 28px 4px; position:relative; overflow:hidden; }
+  .page-header h1{ font-size:22px; position:relative; z-index:1; }
+  .wc-flourish-header{ top:-34px; right:-10px; width:190px; opacity:.45; }
+  #view-root{ padding:12px 28px 44px; }
+
+  .toolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .btn-primary{ background:var(--navy); color:var(--on-navy); border:none; padding:9px 16px; border-radius:8px; font-weight:600; cursor:pointer; }
+  .btn-primary:hover{ background:var(--navy-2); }
+  .btn-secondary{ background:transparent; border:1px solid var(--border); padding:9px 16px; border-radius:8px; cursor:pointer; color:var(--ink-2); }
+  .icon-btn{ background:transparent; border:none; color:var(--ink-3); cursor:pointer; padding:5px; border-radius:6px; display:inline-flex; }
+  .icon-btn:hover{ background:var(--surface-2); color:var(--ink); }
+  .link-btn{ background:none; border:none; color:var(--navy); cursor:pointer; padding:0; font-size:13px; text-decoration:underline; text-underline-offset:2px; }
+  .filter-select{ padding:7px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface); }
+  .chip-clear{ background:var(--gold-soft); color:var(--gold); border:none; padding:6px 12px; border-radius:999px; font-size:12.5px; cursor:pointer; }
+  .empty-note{ color:var(--ink-3); font-size:13.5px; padding:14px 0; }
+
+  /* dashboard */
+  .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; margin-bottom:20px; }
+  .stat-tile{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; display:flex; flex-direction:column; gap:4px; box-shadow:var(--shadow); }
+  .stat-num{ font-family:var(--font-display); font-size:32px; font-weight:900; font-variant-numeric:tabular-nums; color:var(--navy); }
+  .stat-tile.stat-bad .stat-num{ color:var(--bad); }
+  .stat-label{ font-size:13px; color:var(--ink-2); }
+  .dash-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .panel-wide{ grid-column:1 / -1; }
+  .panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; box-shadow:var(--shadow); }
+  .panel-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px; gap:8px; }
+  .panel-head h2{ font-size:16px; }
+  .mini-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+  .mini-list li{ display:flex; align-items:center; gap:8px; font-size:13.5px; padding:7px 0; border-bottom:1px dashed var(--border); }
+  .mini-list li:last-child{ border-bottom:none; }
+  .mini-list li.is-overdue .mini-date{ color:var(--bad); font-weight:700; }
+  .mini-title{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mini-date{ color:var(--ink-2); font-variant-numeric:tabular-nums; font-size:12.5px; white-space:nowrap; }
+  .pin-mark{ color:var(--gold); font-size:11px; font-weight:700; }
+  .quarter-ref{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-top:4px; }
+  .quarter-ref h3{ font-size:14px; color:var(--seal); margin-bottom:4px; }
+  .quarter-ref p{ font-size:12.8px; color:var(--ink-2); line-height:1.6; }
+
+  .badge{ font-size:11.5px; padding:2px 9px; border-radius:999px; font-weight:700; white-space:nowrap; }
+  .badge-todo{ background:var(--surface-2); color:var(--ink-2); }
+  .badge-in_progress{ background:var(--warn-soft); color:var(--warn); }
+  .badge-done{ background:var(--good-soft); color:var(--good); }
+
+  /* calendar */
+  .calendar{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin-bottom:18px; box-shadow:var(--shadow); }
+  .cal-head{ display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:10px; }
+  .cal-head h2{ font-size:17px; min-width:120px; text-align:center; font-variant-numeric:tabular-nums; }
+  .cal-nav{ background:var(--surface-2); border:1px solid var(--border); width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:16px; color:var(--ink-2); }
+  .cal-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:12px; color:var(--ink-3); margin-bottom:4px; }
+  .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .cal-cell{ aspect-ratio:1/0.85; background:var(--surface); border:1px solid var(--border); border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:4px 2px; cursor:pointer; gap:3px; }
+  .cal-cell.cal-empty{ visibility:hidden; border:none; cursor:default; }
+  .cal-cell.cal-today{ border-color:var(--navy); border-width:2px; }
+  .cal-cell.cal-selected{ background:var(--gold-soft); border-color:var(--gold); }
+  .cal-daynum{ font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--ink-2); }
+  .cal-daynum-bad{ color:var(--bad); font-weight:700; }
+  .cal-dots{ display:flex; gap:2px; }
+  .dot{ width:5px; height:5px; border-radius:50%; display:inline-block; }
+  .dot-todo{ background:var(--ink-3); }
+  .dot-in_progress{ background:var(--warn); }
+  .dot-done{ background:var(--good); }
+
+  /* tasks */
+  .task-group{ margin-bottom:18px; }
+  .task-group-title{ font-size:12.5px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px; font-weight:700; }
+  .task-list{ display:flex; flex-direction:column; gap:8px; }
+  .task-row{ display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px; flex-wrap:wrap; }
+  .task-row.is-overdue{ border-color:var(--bad); }
+  .status-select{ font-size:12.5px; font-weight:700; border-radius:999px; padding:4px 10px; border:1px solid var(--border); background:var(--surface); }
+  .status-select.status-todo{ color:var(--ink-2); }
+  .status-select.status-in_progress{ color:var(--warn); border-color:var(--warn); }
+  .status-select.status-done{ color:var(--good); border-color:var(--good); }
+  .task-info{ flex:1 1 200px; display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .task-title{ font-weight:600; }
+  .task-meta{ font-size:12px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .task-due{ font-size:12.5px; color:var(--ink-2); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .text-bad{ color:var(--bad); font-weight:700; }
+  .row-actions{ display:flex; gap:2px; margin-left:auto; }
+
+  /* documents */
+  .doc-group{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; }
+  .doc-group summary{ padding:12px 16px; cursor:pointer; font-weight:700; color:var(--navy); list-style:none; display:flex; align-items:center; gap:8px; }
+  .doc-group summary::-webkit-details-marker{ display:none; }
+  .count-badge{ background:var(--surface-2); color:var(--ink-2); font-size:11.5px; padding:1px 9px; border-radius:999px; font-weight:600; }
+  .doc-table{ border-top:1px solid var(--border); }
+  .doc-row{ display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .doc-row:last-child{ border-bottom:none; }
+  .doc-name{ flex:1 1 200px; color:var(--ink); text-decoration:none; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .doc-name:hover{ text-decoration:underline; color:var(--navy); }
+  .doc-meta{ font-size:12px; color:var(--ink-2); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .doc-note{ font-size:12px; color:var(--ink-3); flex-basis:100%; }
+
+  /* announcements */
+  .ann-list{ display:flex; flex-direction:column; gap:14px; }
+  .ann-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; box-shadow:var(--shadow); }
+  .ann-card.ann-pinned{ border-color:var(--gold); }
+  .ann-head{ display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+  .ann-head h3{ font-size:16.5px; }
+  .ann-head .pin-mark{ background:var(--gold-soft); color:var(--gold); font-size:11px; padding:2px 9px; border-radius:999px; font-weight:700; }
+  .ann-body{ white-space:pre-wrap; color:var(--ink); font-size:14px; line-height:1.7; margin:0 0 10px; }
+  .ann-meta{ display:flex; align-items:center; gap:12px; font-size:12px; color:var(--ink-2); flex-wrap:wrap; }
+  .ann-actions{ margin-left:auto; display:flex; gap:10px; }
+
+  /* dialogs */
+  dialog{ border:none; border-radius:14px; padding:0; background:var(--surface); color:var(--ink); box-shadow:var(--shadow); width:min(480px,92vw); }
+  dialog::backdrop{ background:rgba(15,13,10,.45); }
+  .modal-form{ padding:20px 22px 22px; display:flex; flex-direction:column; gap:14px; }
+  .modal-form label{ display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--ink-2); }
+  .modal-form input,.modal-form select,.modal-form textarea{ padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--ink); }
+  .modal-form textarea{ resize:vertical; font-family:inherit; }
+  .form-row{ display:flex; gap:12px; flex-wrap:wrap; }
+  .form-row label{ flex:1 1 120px; }
+  .check-row{ flex-direction:row !important; align-items:center; gap:8px !important; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:4px; }
+
+  @media (max-width:760px){
+    .app{ flex-direction:column; }
+    .sidebar{ width:auto; flex:0 0 auto; padding:10px 12px; position:sticky; top:env(safe-area-inset-top,0px); z-index:5; }
+    .sidebar-scroll{ flex-direction:row; align-items:center; overflow-y:visible; }
+    .wc-flourish-sidebar{ width:130px; top:-40px; right:-20px; }
+    .brand{ padding:0; }
+    .brand-sub{ display:none; }
+    .nav-list{ flex-direction:row; gap:4px; margin-left:auto; overflow-x:auto; }
+    .nav-item span{ display:none; }
+    .nav-item{ padding:9px; }
+    .sidebar-foot{ display:none; }
+    .dash-grid{ grid-template-columns:1fr; }
+    .page-header{ padding:16px 16px 0; }
+    #view-root{ padding:10px 16px 32px; }
+  }
+</style>
+
+<div class="app">
+  <aside class="sidebar" aria-label="主選單">
+    <svg class="wc-flourish wc-flourish-sidebar" viewBox="0 0 240 320" aria-hidden="true">
+      <defs><filter id="wcblur1" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10"/></filter></defs>
+      <g filter="url(#wcblur1)">
+        <path d="M20 300 C10 240 40 190 30 130 C22 85 55 45 95 15 C80 65 90 110 70 150 C55 180 65 215 50 250 C40 275 45 295 20 300 Z" fill="#7fae4e" opacity=".5"/>
+        <path d="M60 280 C55 230 80 195 75 150 C70 115 95 85 125 60 C112 95 118 130 105 160 C92 190 100 220 85 250 C75 268 72 278 60 280 Z" fill="#d99a5c" opacity=".4"/>
+        <path d="M110 90 C120 65 145 45 170 30 C158 55 160 78 175 95 C188 110 208 115 220 130 C198 128 178 138 168 155 C158 135 145 118 128 108 C118 102 108 100 110 90 Z" fill="#a15c30" opacity=".4"/>
+      </g>
+    </svg>
+    <div class="sidebar-scroll">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">股</span>
+        <div class="brand-text">
+          <strong>股務作業站</strong>
+          <span class="brand-sub" id="greeting">哈囉</span>
+        </div>
+      </div>
+      <nav class="nav-list">
+        <button class="nav-item active" data-view="dashboard" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/></svg>
+          <span>首頁總覽</span>
+        </button>
+        <button class="nav-item" data-view="tasks" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2"/><path d="M8 3.5v4M16 3.5v4M4 10h16"/></svg>
+          <span>股務行事曆</span>
+        </button>
+        <button class="nav-item" data-view="documents" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7Z"/></svg>
+          <span>股東會文件</span>
+        </button>
+        <button class="nav-item" data-view="announcements" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10Z"/><path d="M10 18.5a2 2 0 0 0 4 0"/></svg>
+          <span>公告訊息</span>
+        </button>
+      </nav>
+      <div class="sidebar-foot">內部股務作業系統<br>僅供公司內部人員使用</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <svg class="wc-flourish wc-flourish-header" viewBox="0 0 220 160" aria-hidden="true">
+        <defs><filter id="wcblur2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter></defs>
+        <g filter="url(#wcblur2)">
+          <path d="M40 150 C30 110 50 85 45 55 C40 30 60 15 85 5 C75 30 78 55 65 75 C55 90 60 110 50 130 C45 140 45 148 40 150 Z" fill="#7fae4e" opacity=".35"/>
+          <path d="M150 10 C165 5 180 8 195 15 C180 20 172 32 175 45 C178 58 190 65 200 75 C182 72 168 78 160 90 C155 72 145 55 130 45 C145 35 148 20 150 10 Z" fill="#c98a3d" opacity=".3"/>
+        </g>
+      </svg>
+      <h1 id="page-title">首頁總覽</h1>
+    </div>
+    <section id="view-root"></section>
+  </main>
+</div>
+
+<dialog id="task-dialog">
+  <form class="modal-form" id="task-form">
+    <h3 id="task-dialog-title">新增待辦事項</h3>
+    <label>項目名稱
+      <input type="text" id="task-title" maxlength="120" required>
+    </label>
+    <div class="form-row">
+      <label>分類
+        <select id="task-cat">
+          <option value="q1">第一季・年報籌備</option>
+          <option value="q2">第二季・股東會</option>
+          <option value="q3">第三季・股利發放</option>
+          <option value="q4">第四季・年底結算</option>
+          <option value="monthly">常態月例申報</option>
+          <option value="other">其他</option>
+        </select>
+      </label>
+      <label>截止日
+        <input type="date" id="task-due">
+      </label>
+      <label>狀態
+        <select id="task-status">
+          <option value="todo">待辦</option>
+          <option value="in_progress">進行中</option>
+          <option value="done">已完成</option>
+        </select>
+      </label>
+    </div>
+    <label>備註
+      <textarea id="task-notes" rows="3"></textarea>
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" data-action="close-dialog" data-dialog="task-dialog">取消</button>
+      <button type="submit" class="btn-primary">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="doc-dialog">
+  <form class="modal-form" id="doc-form">
+    <h3>上傳文件</h3>
+    <label>文件分類
+      <select id="doc-cat">
+        <option>開會通知</option>
+        <option>議事手冊</option>
+        <option>委託書</option>
+        <option>議事錄</option>
+        <option>年報</option>
+        <option>公告文件</option>
+        <option>契約合規</option>
+        <option>其他</option>
+      </select>
+    </label>
+    <label>選擇檔案（可多選）
+      <input type="file" id="doc-files" multiple required>
+    </label>
+    <label>備註（選填）
+      <input type="text" id="doc-note" maxlength="200">
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" data-action="close-dialog" data-dialog="doc-dialog">取消</button>
+      <button type="submit" class="btn-primary">上傳</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="announcement-dialog">
+  <form class="modal-form" id="announcement-form">
+    <h3 id="announcement-dialog-title">發布公告</h3>
+    <label>標題
+      <input type="text" id="ann-title" maxlength="120" required>
+    </label>
+    <label>內容
+      <textarea id="ann-body" rows="5" required></textarea>
+    </label>
+    <label class="check-row">
+      <input type="checkbox" id="ann-pinned" style="width:auto;">
+      置頂顯示
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" data-action="close-dialog" data-dialog="announcement-dialog">取消</button>
+      <button type="submit" class="btn-primary">發布</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function(){
+  "use strict";
+
+  var TASK_CATS = [["q1","第一季・年報籌備"],["q2","第二季・股東會"],["q3","第三季・股利發放"],["q4","第四季・年底結算"],["monthly","常態月例申報"],["other","其他"]];
+  var TASK_CAT_MAP = {}; TASK_CATS.forEach(function(p){ TASK_CAT_MAP[p[0]] = p[1]; });
+  var DOC_CATS = ["開會通知","議事手冊","委託書","議事錄","年報","公告文件","契約合規","其他"];
+  var STATUS_LABEL = { todo:"待辦", in_progress:"進行中", done:"已完成" };
+  var ICON_EDIT = '<svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 16.5l1-3.6L13.5 4.4a1.5 1.5 0 0 1 2.1 0l0 0a1.5 1.5 0 0 1 0 2.1L7.1 15l-3.6 1z"/></svg>';
+  var ICON_DELETE = '<svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h12M8 6V4.5A1.5 1.5 0 0 1 9.5 3h1A1.5 1.5 0 0 1 12 4.5V6M6 6l.6 10a1.5 1.5 0 0 0 1.5 1.4h3.8a1.5 1.5 0 0 0 1.5-1.4L14 6"/></svg>';
+
+  var SEED_TASKS = [
+    { id:"t1", title:"向集保申請股東持股分析報告", category:"q1", dueDate:"2026-01-20", status:"todo", notes:"確認大股東名單與外資比例", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t2", title:"董監事持股月申報", category:"monthly", dueDate:"2026-02-05", status:"todo", notes:"每月5日前向金管會證期局申報", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t3", title:"配合會計師提供股本明細", category:"q1", dueDate:"2026-02-15", status:"todo", notes:"含庫藏股、員工認股資料", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t4", title:"董事會決議股東常會日期", category:"q1", dueDate:"2026-03-10", status:"todo", notes:"確認日期、地點、議案", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t5", title:"公告停止過戶", category:"q1", dueDate:"2026-03-25", status:"todo", notes:"股東會前10日於MOPS公告", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t6", title:"寄發股東常會開會通知", category:"q2", dueDate:"2026-05-01", status:"todo", notes:"召開前30日寄發", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t7", title:"電子投票系統設定開通", category:"q2", dueDate:"2026-05-10", status:"todo", notes:"向集保申請e-Vote並設定議案", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t8", title:"委託書與出席卡收件彙整", category:"q2", dueDate:"2026-05-25", status:"todo", notes:"逐日確認授權有效性", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t9", title:"股東常會召開", category:"q2", dueDate:"2026-06-18", status:"todo", notes:"確認出席股數達法定門檻", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t10", title:"股東常會議事錄公告", category:"q2", dueDate:"2026-07-08", status:"todo", notes:"會後20日內完成並公告於MOPS", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t11", title:"公告除權息基準日", category:"q3", dueDate:"2026-07-25", status:"todo", notes:"配合集保時程向OTC申報", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t12", title:"現金股利匯款作業", category:"q3", dueDate:"2026-08-20", status:"todo", notes:"透過股務代理機構匯至股東集保帳戶", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t13", title:"扣繳憑單資料核對", category:"q3", dueDate:"2026-09-15", status:"todo", notes:"與財務部確認所得稅扣繳數字", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t14", title:"董監事任期確認與次年改選評估", category:"q4", dueDate:"2026-11-10", status:"todo", notes:"", createdAt:"2026-01-01T00:00:00.000Z" },
+    { id:"t15", title:"年度股務作業檢討會議", category:"q4", dueDate:"2026-12-15", status:"todo", notes:"彙整全年缺失與改善建議", createdAt:"2026-01-01T00:00:00.000Z" }
+  ];
+  var SEED_ANNOUNCEMENTS = [
+    { id:"a1", title:"歡迎使用股務作業站", body:"這裡整合了全年度股務行事曆、股東會文件庫，以及公告發布功能。待辦事項可依季度分類、追蹤狀態與截止日；文件會依類別自動分組；公告可置頂顯示重要訊息。歡迎團隊成員開始使用並依實際狀況調整內容。", publishedAt:"2026-01-05T00:00:00.000Z", pinned:true, authorId:null },
+    { id:"a2", title:"2026年度股東常會時程預告", body:"預計於6月中召開股東常會，相關前置作業（開會通知、委託書徵集、電子投票設定）已列入股務行事曆，請各負責同仁留意截止日期。", publishedAt:"2026-01-10T00:00:00.000Z", pinned:false, authorId:null }
+  ];
+
+  var LOCAL_KEY = "shareholder_ops_v1";
+  var isLocalMode = false;
+  var localState = null;
+  function loadLocal(){
+    try{
+      var raw = localStorage.getItem(LOCAL_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return null;
+  }
+  function saveLocal(){
+    try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(localState)); }catch(e){}
+  }
+  function ensureLocalState(){
+    if(localState) return localState;
+    var loaded = loadLocal();
+    localState = loaded || { tasks: SEED_TASKS.slice(), documents: [], announcements: SEED_ANNOUNCEMENTS.slice() };
+    if(!loaded) saveLocal();
+    return localState;
+  }
+  function uid(){ return "l" + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+  var db = null, assetsCap = null, userCap = null;
+  var canWriteShared = true;
+  var myId = null;
+  var tasks = [], docsList = [], announcements = [];
+  var profilesCache = {};
+  var currentView = "dashboard";
+  var calMonth = new Date(); calMonth.setDate(1);
+  var selectedDate = null;
+  var taskFilter = { status:"all", cat:"all" };
+
+  var viewRoot = document.getElementById("view-root");
+  var pageTitle = document.getElementById("page-title");
+
+  function esc(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+    });
+  }
+  function fmtDate(iso){
+    if(!iso) return "";
+    var parts = iso.split("-");
+    if(parts.length < 3) return iso;
+    return parts[0] + "/" + parts[1] + "/" + parts[2];
+  }
+  function todayIso(){ return new Date().toISOString().slice(0,10); }
+  function isOverdue(t){ return t.status !== "done" && t.dueDate && t.dueDate < todayIso(); }
+  function fmtSize(n){
+    if(n == null) return "";
+    if(n < 1024) return n + " B";
+    if(n < 1024*1024) return (n/1024).toFixed(1) + " KB";
+    return (n/1024/1024).toFixed(1) + " MB";
+  }
+
+  function navigate(view){
+    currentView = view;
+    selectedDate = null;
+    document.querySelectorAll(".nav-item").forEach(function(el){
+      el.classList.toggle("active", el.dataset.view === view);
+    });
+    render();
+  }
+
+  function render(){
+    if(currentView === "dashboard") renderDashboard();
+    else if(currentView === "tasks") renderTasks();
+    else if(currentView === "documents") renderDocuments();
+    else if(currentView === "announcements") renderAnnouncements();
+  }
+
+  // ---------- dashboard ----------
+  function renderDashboard(){
+    pageTitle.textContent = "首頁總覽";
+    var openTasks = tasks.filter(function(t){ return t.status !== "done"; });
+    var overdue = tasks.filter(isOverdue);
+    var upcoming = openTasks.filter(function(t){ return t.dueDate; })
+      .sort(function(a,b){ return a.dueDate > b.dueDate ? 1 : -1; }).slice(0,6);
+    var recentAnn = announcements.slice().sort(function(a,b){
+      return (a.publishedAt||"") < (b.publishedAt||"") ? 1 : -1;
+    }).slice(0,3);
+
+    var html = "";
+    html += '<div class="stat-grid">';
+    html += '<div class="stat-tile"><span class="stat-num">' + openTasks.length + '</span><span class="stat-label">待辦事項</span></div>';
+    html += '<div class="stat-tile' + (overdue.length ? ' stat-bad' : '') + '"><span class="stat-num">' + overdue.length + '</span><span class="stat-label">逾期項目</span></div>';
+    html += '<div class="stat-tile"><span class="stat-num">' + docsList.length + '</span><span class="stat-label">文件庫存</span></div>';
+    html += '<div class="stat-tile"><span class="stat-num">' + announcements.length + '</span><span class="stat-label">公告則數</span></div>';
+    html += '</div>';
+
+    html += '<div class="dash-grid">';
+    html += '<div class="panel"><div class="panel-head"><h2>近期待辦</h2><button class="link-btn" data-action="goto" data-view="tasks" type="button">查看全部 →</button></div>';
+    if(upcoming.length){
+      html += '<ul class="mini-list">' + upcoming.map(function(t){
+        return '<li class="' + (isOverdue(t) ? 'is-overdue' : '') + '"><span class="badge badge-' + t.status + '">' + STATUS_LABEL[t.status] + '</span><span class="mini-title">' + esc(t.title) + '</span><span class="mini-date">' + fmtDate(t.dueDate) + '</span></li>';
+      }).join('') + '</ul>';
+    } else {
+      html += '<p class="empty-note">目前沒有待辦事項。</p>';
+    }
+    html += '</div>';
+
+    html += '<div class="panel"><div class="panel-head"><h2>最新公告</h2><button class="link-btn" data-action="goto" data-view="announcements" type="button">查看全部 →</button></div>';
+    if(recentAnn.length){
+      html += '<ul class="mini-list">' + recentAnn.map(function(a){
+        return '<li>' + (a.pinned ? '<span class="pin-mark">置頂</span>' : '') + '<span class="mini-title">' + esc(a.title) + '</span><span class="mini-date">' + fmtDate((a.publishedAt||"").slice(0,10)) + '</span></li>';
+      }).join('') + '</ul>';
+    } else {
+      html += '<p class="empty-note">尚無公告。</p>';
+    }
+    html += '</div>';
+
+    html += '<div class="panel panel-wide"><div class="panel-head"><h2>年度股務重點提醒</h2></div><div class="quarter-ref">';
+    html += '<div><h3>Q1・1-3月</h3><p>股東名簿與董監持股盤點、配合財報作業、規劃停止過戶日期。</p></div>';
+    html += '<div><h3>Q2・4-6月</h3><p>寄發開會通知、委託書與電子投票作業、召開股東常會並公告議事錄。</p></div>';
+    html += '<div><h3>Q3・7-9月</h3><p>公告除權息基準日、計算並匯發股利、核對扣繳憑單資料。</p></div>';
+    html += '<div><h3>Q4・10-12月</h3><p>年度股務作業檢討、確認董監任期、預備次年股東會時程與年報資料。</p></div>';
+    html += '</div></div>';
+    html += '</div>';
+
+    viewRoot.innerHTML = html;
+  }
+
+  // ---------- tasks / calendar ----------
+  function renderTasks(){
+    pageTitle.textContent = "股務行事曆・待辦追蹤";
+    var y = calMonth.getFullYear(), m = calMonth.getMonth();
+    var first = new Date(y, m, 1);
+    var startWeekday = first.getDay();
+    var daysInMonth = new Date(y, m+1, 0).getDate();
+    var today = todayIso();
+
+    var cells = "";
+    for(var i=0;i<startWeekday;i++) cells += '<div class="cal-cell cal-empty"></div>';
+    for(var d=1; d<=daysInMonth; d++){
+      var iso = y + "-" + String(m+1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+      var dayTasks = tasks.filter(function(t){ return t.dueDate === iso; });
+      var overdueHere = dayTasks.some(isOverdue);
+      cells += '<button type="button" class="cal-cell ' + (iso===today?'cal-today':'') + ' ' + (iso===selectedDate?'cal-selected':'') + '" data-action="calendar-day" data-date="' + iso + '">' +
+        '<span class="cal-daynum ' + (overdueHere?'cal-daynum-bad':'') + '">' + d + '</span>' +
+        (dayTasks.length ? '<span class="cal-dots">' + dayTasks.slice(0,4).map(function(t){ return '<i class="dot dot-' + t.status + '"></i>'; }).join('') + '</span>' : '') +
+        '</button>';
+    }
+
+    var filtered = tasks.filter(function(t){
+      var statusOk = taskFilter.status === "all" || t.status === taskFilter.status || (taskFilter.status === "overdue" && isOverdue(t));
+      var catOk = taskFilter.cat === "all" || t.category === taskFilter.cat;
+      var dateOk = !selectedDate || t.dueDate === selectedDate;
+      return statusOk && catOk && dateOk;
+    }).sort(function(a,b){
+      var da = a.dueDate || "9999-99", db_ = b.dueDate || "9999-99";
+      return da > db_ ? 1 : -1;
+    });
+
+    var groups = {}, groupKeys = [];
+    filtered.forEach(function(t){
+      var key = t.dueDate ? t.dueDate.slice(0,7) : "未排定";
+      if(!groups[key]){ groups[key] = []; groupKeys.push(key); }
+      groups[key].push(t);
+    });
+    groupKeys.sort();
+
+    var html = "";
+    html += '<div class="toolbar">';
+    if(canWriteShared) html += '<button class="btn-primary" data-action="open-task-form" type="button">＋ 新增待辦</button>';
+    html += '<select class="filter-select" data-filter="status">' +
+      '<option value="all">全部狀態</option><option value="todo">待辦</option><option value="in_progress">進行中</option><option value="done">已完成</option><option value="overdue">逾期</option></select>';
+    html += '<select class="filter-select" data-filter="cat"><option value="all">全部分類</option>' + TASK_CATS.map(function(p){ return '<option value="' + p[0] + '">' + esc(p[1]) + '</option>'; }).join('') + '</select>';
+    if(selectedDate) html += '<button class="chip-clear" data-action="clear-date-filter" type="button">清除日期篩選（' + fmtDate(selectedDate) + '）✕</button>';
+    html += '</div>';
+
+    html += '<div class="calendar"><div class="cal-head"><button class="cal-nav" data-action="calendar-prev" type="button" aria-label="上個月">‹</button><h2>' + y + '年' + (m+1) + '月</h2><button class="cal-nav" data-action="calendar-next" type="button" aria-label="下個月">›</button></div>';
+    html += '<div class="cal-weekdays">' + ["日","一","二","三","四","五","六"].map(function(w){ return '<span>'+w+'</span>'; }).join('') + '</div>';
+    html += '<div class="cal-grid">' + cells + '</div></div>';
+
+    html += '<div class="task-groups">';
+    if(groupKeys.length){
+      groupKeys.forEach(function(k){
+        var label;
+        if(k === "未排定") label = "未排定日期";
+        else { var kp = k.split("-"); label = kp[0] + "年" + parseInt(kp[1],10) + "月"; }
+        html += '<div class="task-group"><h3 class="task-group-title">' + label + '</h3><div class="task-list">';
+        html += groups[k].map(taskRowHtml).join('');
+        html += '</div></div>';
+      });
+    } else {
+      html += '<p class="empty-note">沒有符合條件的待辦事項。</p>';
+    }
+    html += '</div>';
+
+    viewRoot.innerHTML = html;
+    var sSel = viewRoot.querySelector('[data-filter="status"]'); if(sSel) sSel.value = taskFilter.status;
+    var cSel = viewRoot.querySelector('[data-filter="cat"]'); if(cSel) cSel.value = taskFilter.cat;
+  }
+
+  function taskRowHtml(t){
+    var overdue = isOverdue(t);
+    return '<div class="task-row ' + (overdue?'is-overdue':'') + '">' +
+      '<select class="status-select status-' + t.status + '" data-action="set-status" data-id="' + t.id + '" ' + (canWriteShared?'':'disabled') + '>' +
+        '<option value="todo"' + (t.status==='todo'?' selected':'') + '>待辦</option>' +
+        '<option value="in_progress"' + (t.status==='in_progress'?' selected':'') + '>進行中</option>' +
+        '<option value="done"' + (t.status==='done'?' selected':'') + '>已完成</option>' +
+      '</select>' +
+      '<div class="task-info"><span class="task-title">' + esc(t.title) + '</span><span class="task-meta">' + esc(TASK_CAT_MAP[t.category]||'其他') + (t.notes ? ' · ' + esc(t.notes) : '') + '</span></div>' +
+      '<span class="task-due ' + (overdue?'text-bad':'') + '">' + (t.dueDate ? fmtDate(t.dueDate) + (overdue?'（逾期）':'') : '未排定') + '</span>' +
+      (canWriteShared ? '<div class="row-actions"><button class="icon-btn" data-action="edit-task" data-id="' + t.id + '" type="button" title="編輯">' + ICON_EDIT + '</button><button class="icon-btn" data-action="delete-task" data-id="' + t.id + '" type="button" title="刪除">' + ICON_DELETE + '</button></div>' : '<div class="row-actions"></div>') +
+    '</div>';
+  }
+
+  // ---------- documents ----------
+  function renderDocuments(){
+    pageTitle.textContent = "股東會・文件管理";
+    var groups = {};
+    DOC_CATS.forEach(function(c){ groups[c] = []; });
+    docsList.forEach(function(d){
+      var cat = d.category || "其他";
+      if(!groups[cat]) groups[cat] = [];
+      groups[cat].push(d);
+    });
+    var allCats = DOC_CATS.slice();
+    Object.keys(groups).forEach(function(c){ if(allCats.indexOf(c) === -1) allCats.push(c); });
+
+    var canUploadDocs = isLocalMode || !!assetsCap;
+    var html = '<div class="toolbar">';
+    if(canUploadDocs) html += '<button class="btn-primary" data-action="open-doc-upload" type="button">＋ 上傳文件</button>';
+    else html += '<p class="empty-note">目前帳號僅能檢視文件，無法上傳或刪除。</p>';
+    html += '</div><div class="doc-groups">';
+
+    var any = false;
+    allCats.forEach(function(cat){
+      var items = (groups[cat] || []).slice().sort(function(a,b){ return (a.uploadedAt||"") < (b.uploadedAt||"") ? 1 : -1; });
+      if(!items.length) return;
+      any = true;
+      html += '<details class="doc-group" open><summary>' + esc(cat) + ' <span class="count-badge">' + items.length + '</span></summary><div class="doc-table">';
+      items.forEach(function(d){
+        var href = d.dataUrl ? d.dataUrl : (d.assetId ? ('/_blob/' + esc(d.assetId)) : '');
+        html += '<div class="doc-row">' +
+          (href ? '<a class="doc-name" href="' + href + '" target="_blank" rel="noopener">' + esc(d.name) + '</a>' : '<span class="doc-name" style="color:var(--ink-3);">' + esc(d.name) + '</span>') +
+          '<span class="doc-meta">' + fmtSize(d.sizeBytes) + '</span>' +
+          '<span class="doc-meta">' + fmtDate((d.uploadedAt||"").slice(0,10)) + '</span>' +
+          (canUploadDocs ? '<button class="icon-btn" data-action="delete-doc" data-id="' + d.id + '" type="button" title="刪除">' + ICON_DELETE + '</button>' : '') +
+          (d.note ? '<span class="doc-note">' + esc(d.note) + '</span>' : '') +
+        '</div>';
+      });
+      html += '</div></details>';
+    });
+    if(!any) html += '<p class="empty-note">尚未上傳任何文件。</p>';
+    html += '</div>';
+    viewRoot.innerHTML = html;
+  }
+
+  // ---------- announcements ----------
+  function renderAnnouncements(){
+    pageTitle.textContent = "公告與最新消息";
+    var sorted = announcements.slice().sort(function(a,b){
+      var ap = !!a.pinned, bp = !!b.pinned;
+      if(ap !== bp) return ap ? -1 : 1;
+      return (a.publishedAt||"") < (b.publishedAt||"") ? 1 : -1;
+    });
+    var ids = [];
+    sorted.forEach(function(a){ if(a.authorId && ids.indexOf(a.authorId) === -1) ids.push(a.authorId); });
+
+    function paint(){
+      var html = '<div class="toolbar">';
+      if(canWriteShared) html += '<button class="btn-primary" data-action="open-announcement-form" type="button">＋ 發布公告</button>';
+      html += '</div><div class="ann-list">';
+      if(sorted.length){
+        sorted.forEach(function(a){
+          var author = profilesCache[a.authorId];
+          var authorName = (author && author.name) ? author.name : "股務團隊";
+          html += '<article class="ann-card ' + (a.pinned?'ann-pinned':'') + '">' +
+            '<div class="ann-head">' + (a.pinned ? '<span class="pin-mark">置頂</span>' : '') + '<h3>' + esc(a.title) + '</h3></div>' +
+            '<p class="ann-body">' + esc(a.body) + '</p>' +
+            '<div class="ann-meta"><span>' + esc(authorName) + '</span><span>' + fmtDate((a.publishedAt||"").slice(0,10)) + '</span>' +
+            (canWriteShared ? '<span class="ann-actions"><button class="link-btn" data-action="toggle-pin" data-id="' + a.id + '" type="button">' + (a.pinned?'取消置頂':'置頂') + '</button><button class="link-btn" data-action="edit-announcement" data-id="' + a.id + '" type="button">編輯</button><button class="link-btn" data-action="delete-announcement" data-id="' + a.id + '" type="button">刪除</button></span>' : '') +
+            '</div></article>';
+        });
+      } else {
+        html += '<p class="empty-note">尚無公告，點擊上方按鈕發布第一則。</p>';
+      }
+      html += '</div>';
+      viewRoot.innerHTML = html;
+    }
+
+    if(ids.length && userCap){
+      resolveNames(ids).then(paint);
+    } else {
+      paint();
+    }
+  }
+
+  function resolveNames(ids){
+    var need = ids.filter(function(id){ return id && !profilesCache[id]; });
+    if(!need.length || !userCap) return Promise.resolve(profilesCache);
+    return userCap.profiles(need).then(function(res){
+      Object.assign(profilesCache, res);
+      return profilesCache;
+    }).catch(function(){ return profilesCache; });
+  }
+
+  // ---------- mutations ----------
+  function requireDb(){
+    if(!db){ alert("尚未連線至資料服務，請重新整理頁面後再試一次。"); return false; }
+    return true;
+  }
+
+  function saveTask(data, id){
+    if(isLocalMode){
+      if(id){
+        var t = tasks.filter(function(x){ return x.id === id; })[0];
+        if(t) Object.assign(t, data);
+      } else {
+        tasks.push(Object.assign({ id: uid(), createdAt: new Date().toISOString(), authorId: null }, data));
+      }
+      saveLocal(); render();
+      return Promise.resolve();
+    }
+    if(!requireDb()) return Promise.resolve();
+    var p = id ? db.collection("tasks").doc(id).update(data)
+               : db.collection("tasks").add(Object.assign({}, data, { createdAt: new Date().toISOString(), authorId: myId }));
+    return p.catch(function(err){ alert("儲存失敗：" + (err && err.message ? err.message : err)); });
+  }
+  function deleteTask(id){
+    if(!confirm("確定要刪除這項待辦事項嗎？")) return;
+    if(isLocalMode){
+      var idx = tasks.findIndex(function(x){ return x.id === id; });
+      if(idx > -1) tasks.splice(idx,1);
+      saveLocal(); render();
+      return;
+    }
+    if(!requireDb()) return;
+    db.collection("tasks").doc(id).delete().catch(function(){ alert("刪除失敗。"); });
+  }
+  function updateTaskStatus(id, status){
+    if(isLocalMode){
+      var t = tasks.filter(function(x){ return x.id === id; })[0];
+      if(t){ t.status = status; saveLocal(); render(); }
+      return;
+    }
+    if(!requireDb()) return;
+    db.collection("tasks").doc(id).update({ status: status }).catch(function(){ alert("更新失敗。"); });
+  }
+
+  function handleUpload(files, category, note){
+    if(isLocalMode){
+      var maxInline = 4 * 1024 * 1024;
+      files.forEach(function(file){
+        if(file.size <= maxInline){
+          var reader = new FileReader();
+          reader.onload = function(){
+            docsList.push({ id: uid(), name: file.name, category: category, note: note || "", sizeBytes: file.size, contentType: file.type || "application/octet-stream", uploadedAt: new Date().toISOString(), authorId: null, dataUrl: reader.result });
+            saveLocal(); render();
+          };
+          reader.readAsDataURL(file);
+        } else {
+          docsList.push({ id: uid(), name: file.name, category: category, note: (note ? note + "　" : "") + "（檔案超過4MB，本機模式僅保留檔名資訊）", sizeBytes: file.size, contentType: file.type || "application/octet-stream", uploadedAt: new Date().toISOString(), authorId: null, dataUrl: null });
+          saveLocal(); render();
+        }
+      });
+      return;
+    }
+    if(!assetsCap){ alert("目前帳號沒有上傳文件的權限。"); return; }
+    if(!requireDb()) return;
+    files.forEach(function(file){
+      assetsCap.upload(file).then(function(res){
+        return db.collection("documents").add({
+          name: file.name, category: category, note: note || "",
+          assetId: res.id, sizeBytes: res.sizeBytes, contentType: res.contentType,
+          uploadedAt: new Date().toISOString(), authorId: myId
+        });
+      }).catch(function(err){
+        alert('上傳「' + file.name + '」失敗：' + (err && err.message ? err.message : err));
+      });
+    });
+  }
+  function deleteDoc(id){
+    var d = docsList.filter(function(x){ return x.id === id; })[0];
+    if(!d) return;
+    if(!confirm('確定要刪除「' + d.name + '」嗎？此操作無法復原。')) return;
+    if(isLocalMode){
+      var idx = docsList.findIndex(function(x){ return x.id === id; });
+      if(idx > -1) docsList.splice(idx,1);
+      saveLocal(); render();
+      return;
+    }
+    if(!requireDb()) return;
+    var chain = Promise.resolve();
+    if(assetsCap && d.assetId) chain = assetsCap.delete(d.assetId).catch(function(){});
+    chain.then(function(){ return db.collection("documents").doc(id).delete(); })
+      .catch(function(){ alert("刪除失敗。"); });
+  }
+
+  function saveAnnouncement(data, id){
+    if(isLocalMode){
+      if(id){
+        var a = announcements.filter(function(x){ return x.id === id; })[0];
+        if(a) Object.assign(a, data);
+      } else {
+        announcements.push(Object.assign({ id: uid(), publishedAt: new Date().toISOString(), authorId: null }, data, { pinned: !!data.pinned }));
+      }
+      saveLocal(); render();
+      return Promise.resolve();
+    }
+    if(!requireDb()) return Promise.resolve();
+    var p = id ? db.collection("announcements").doc(id).update(data)
+               : db.collection("announcements").add(Object.assign({}, data, { publishedAt: new Date().toISOString(), authorId: myId, pinned: !!data.pinned }));
+    return p.catch(function(err){ alert("儲存失敗：" + (err && err.message ? err.message : err)); });
+  }
+  function deleteAnnouncement(id){
+    if(!confirm("確定要刪除這則公告嗎？")) return;
+    if(isLocalMode){
+      var idx = announcements.findIndex(function(x){ return x.id === id; });
+      if(idx > -1) announcements.splice(idx,1);
+      saveLocal(); render();
+      return;
+    }
+    if(!requireDb()) return;
+    db.collection("announcements").doc(id).delete().catch(function(){ alert("刪除失敗。"); });
+  }
+  function togglePin(id){
+    var a = announcements.filter(function(x){ return x.id === id; })[0];
+    if(!a) return;
+    if(isLocalMode){
+      a.pinned = !a.pinned;
+      saveLocal(); render();
+      return;
+    }
+    if(!requireDb()) return;
+    db.collection("announcements").doc(id).update({ pinned: !a.pinned }).catch(function(){});
+  }
+
+  // ---------- dialogs ----------
+  function openTaskForm(task){
+    var dlg = document.getElementById("task-dialog");
+    document.getElementById("task-dialog-title").textContent = task ? "編輯待辦事項" : "新增待辦事項";
+    document.getElementById("task-title").value = task ? task.title || "" : "";
+    document.getElementById("task-cat").value = task ? (task.category || "other") : "other";
+    document.getElementById("task-due").value = task ? (task.dueDate || "") : "";
+    document.getElementById("task-status").value = task ? (task.status || "todo") : "todo";
+    document.getElementById("task-notes").value = task ? (task.notes || "") : "";
+    dlg.dataset.editId = task ? task.id : "";
+    dlg.showModal();
+  }
+  function openDocUpload(){
+    document.getElementById("doc-files").value = "";
+    document.getElementById("doc-note").value = "";
+    document.getElementById("doc-dialog").showModal();
+  }
+  function openAnnouncementForm(a){
+    var dlg = document.getElementById("announcement-dialog");
+    document.getElementById("announcement-dialog-title").textContent = a ? "編輯公告" : "發布公告";
+    document.getElementById("ann-title").value = a ? a.title || "" : "";
+    document.getElementById("ann-body").value = a ? a.body || "" : "";
+    document.getElementById("ann-pinned").checked = !!(a && a.pinned);
+    dlg.dataset.editId = a ? a.id : "";
+    dlg.showModal();
+  }
+
+  // ---------- event wiring ----------
+  function findTask(id){ return tasks.filter(function(t){ return t.id === id; })[0]; }
+  function findAnnouncement(id){ return announcements.filter(function(a){ return a.id === id; })[0]; }
+
+  viewRoot.addEventListener("click", function(e){
+    var btn = e.target.closest("[data-action]");
+    if(!btn) return;
+    var action = btn.dataset.action, id = btn.dataset.id;
+    if(action === "open-task-form") openTaskForm(null);
+    else if(action === "edit-task") openTaskForm(findTask(id));
+    else if(action === "delete-task") deleteTask(id);
+    else if(action === "calendar-prev"){ calMonth.setMonth(calMonth.getMonth()-1); renderTasks(); }
+    else if(action === "calendar-next"){ calMonth.setMonth(calMonth.getMonth()+1); renderTasks(); }
+    else if(action === "calendar-day"){ selectedDate = (selectedDate === btn.dataset.date) ? null : btn.dataset.date; renderTasks(); }
+    else if(action === "clear-date-filter"){ selectedDate = null; renderTasks(); }
+    else if(action === "open-doc-upload") openDocUpload();
+    else if(action === "delete-doc") deleteDoc(id);
+    else if(action === "open-announcement-form") openAnnouncementForm(null);
+    else if(action === "edit-announcement") openAnnouncementForm(findAnnouncement(id));
+    else if(action === "delete-announcement") deleteAnnouncement(id);
+    else if(action === "toggle-pin") togglePin(id);
+    else if(action === "goto") navigate(btn.dataset.view);
+  });
+
+  viewRoot.addEventListener("change", function(e){
+    var sel = e.target.closest('[data-action="set-status"]');
+    if(sel){ updateTaskStatus(sel.dataset.id, sel.value); return; }
+    var f = e.target.closest("[data-filter]");
+    if(f){ taskFilter[f.dataset.filter] = f.value; renderTasks(); }
+  });
+
+  document.querySelector(".sidebar").addEventListener("click", function(e){
+    var item = e.target.closest(".nav-item");
+    if(item) navigate(item.dataset.view);
+  });
+
+  document.addEventListener("click", function(e){
+    var btn = e.target.closest('[data-action="close-dialog"]');
+    if(btn) document.getElementById(btn.dataset.dialog).close();
+  });
+  document.querySelectorAll("dialog").forEach(function(dlg){
+    dlg.addEventListener("click", function(e){ if(e.target === dlg) dlg.close(); });
+  });
+
+  document.getElementById("task-form").addEventListener("submit", function(e){
+    e.preventDefault();
+    var dlg = document.getElementById("task-dialog");
+    var data = {
+      title: document.getElementById("task-title").value.trim(),
+      category: document.getElementById("task-cat").value,
+      dueDate: document.getElementById("task-due").value || null,
+      status: document.getElementById("task-status").value,
+      notes: document.getElementById("task-notes").value.trim()
+    };
+    if(!data.title) return;
+    var editId = dlg.dataset.editId || null;
+    dlg.close();
+    saveTask(data, editId);
+  });
+
+  document.getElementById("doc-form").addEventListener("submit", function(e){
+    e.preventDefault();
+    var dlg = document.getElementById("doc-dialog");
+    var filesInput = document.getElementById("doc-files");
+    var files = Array.prototype.slice.call(filesInput.files);
+    var category = document.getElementById("doc-cat").value;
+    var note = document.getElementById("doc-note").value.trim();
+    if(!files.length) return;
+    dlg.close();
+    handleUpload(files, category, note);
+  });
+
+  document.getElementById("announcement-form").addEventListener("submit", function(e){
+    e.preventDefault();
+    var dlg = document.getElementById("announcement-dialog");
+    var data = {
+      title: document.getElementById("ann-title").value.trim(),
+      body: document.getElementById("ann-body").value.trim(),
+      pinned: document.getElementById("ann-pinned").checked
+    };
+    if(!data.title || !data.body) return;
+    var editId = dlg.dataset.editId || null;
+    dlg.close();
+    saveAnnouncement(data, editId);
+  });
+
+  // ---------- boot ----------
+  function bootLocal(){
+    isLocalMode = true;
+    canWriteShared = true;
+    assetsCap = null;
+    ensureLocalState();
+    tasks = localState.tasks;
+    docsList = localState.documents;
+    announcements = localState.announcements;
+    var greet = document.getElementById("greeting");
+    if(greet) greet.textContent = "哈囉（本機模式）";
+    var foot = document.querySelector(".sidebar-foot");
+    if(foot) foot.innerHTML = "本機獨立模式<br>資料僅保存在此瀏覽器（localStorage）";
+    render();
+  }
+
+  function subscribe(){
+    db.collection("tasks").onSnapshot(function(snap){
+      tasks = snap.docs.map(function(d){ return Object.assign({ id: d.id }, d.data()); });
+      render();
+    }, function(err){ console.error("tasks snapshot", err); });
+
+    db.collection("documents").onSnapshot(function(snap){
+      docsList = snap.docs.map(function(d){ return Object.assign({ id: d.id }, d.data()); });
+      render();
+    }, function(err){ console.error("documents snapshot", err); });
+
+    db.collection("announcements").onSnapshot(function(snap){
+      announcements = snap.docs.map(function(d){ return Object.assign({ id: d.id }, d.data()); });
+      render();
+    }, function(err){ console.error("announcements snapshot", err); });
+  }
+
+  function boot(){
+    if(!window.claude || !window.claude.use){ bootLocal(); return; }
+    window.claude.use("db").then(function(dbCap){
+      db = dbCap;
+      if(!db){ bootLocal(); return; }
+      return Promise.all([
+        window.claude.use("assets").then(function(c){ assetsCap = c; }),
+        window.claude.use("user").then(function(c){
+          userCap = c;
+          if(!userCap) return;
+          return Promise.all([
+            userCap.id().then(function(id){ myId = id; }),
+            userCap.can("data.write").then(function(w){ canWriteShared = (w === false) ? false : true; }),
+            userCap.me().then(function(me){
+              var el = document.getElementById("greeting");
+              el.textContent = me.name ? ("哈囉，" + me.name) : "哈囉";
+            })
+          ]);
+        })
+      ]).then(function(){
+        subscribe();
+        render();
+      });
+    }).catch(function(err){ console.error("boot failed", err); bootLocal(); });
+  }
+
+  navigate("dashboard");
+  boot();
+})();
+</script>
