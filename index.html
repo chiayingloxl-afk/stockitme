@@ -174,6 +174,19 @@
   .ann-meta{ display:flex; align-items:center; gap:12px; font-size:12px; color:var(--ink-2); flex-wrap:wrap; }
   .ann-actions{ margin-left:auto; display:flex; gap:10px; }
 
+  /* consultation */
+  .consultation-card{ background:linear-gradient(135deg,var(--surface),var(--gold-soft)); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:18px; }
+  .consultation-copy{ min-width:0; }
+  .consultation-copy h2{ font-size:17px; margin-bottom:4px; }
+  .consultation-copy p{ color:var(--ink-2); font-size:13px; }
+  .consultation-icon{ width:42px; height:42px; flex:0 0 42px; border-radius:50%; background:var(--seal-soft); color:var(--seal); display:flex; align-items:center; justify-content:center; }
+  .consultation-card .btn-primary{ flex:0 0 auto; white-space:nowrap; }
+  .consultation-note{ font-size:11.5px; color:var(--ink-3); margin-top:2px; }
+  @media (max-width:760px){
+    .consultation-card{ align-items:flex-start; flex-wrap:wrap; }
+    .consultation-card .btn-primary{ width:100%; }
+  }
+
   /* dialogs */
   dialog{ border:none; border-radius:14px; padding:0; background:var(--surface); color:var(--ink); box-shadow:var(--shadow); width:min(480px,92vw); }
   dialog::backdrop{ background:rgba(15,13,10,.45); }
@@ -324,6 +337,26 @@
   </form>
 </dialog>
 
+<dialog id="consultation-dialog">
+  <form class="modal-form" id="consultation-form">
+    <h3>輸入諮詢</h3>
+    <p class="consultation-note">請留下 Email 與諮詢內容，方便後續聯繫。</p>
+    <label>Email
+      <input type="email" id="consult-email" maxlength="160" placeholder="name@example.com" autocomplete="email" required>
+    </label>
+    <label>諮詢主旨
+      <input type="text" id="consult-subject" maxlength="120" placeholder="請輸入諮詢主旨" required>
+    </label>
+    <label>諮詢內容
+      <textarea id="consult-body" rows="5" maxlength="2000" placeholder="請描述您的問題或需求..." required></textarea>
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" data-action="close-dialog" data-dialog="consultation-dialog">取消</button>
+      <button type="submit" class="btn-primary">送出諮詢</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="announcement-dialog">
   <form class="modal-form" id="announcement-form">
     <h3 id="announcement-dialog-title">發布公告</h3>
@@ -460,6 +493,12 @@
     }).slice(0,3);
 
     var html = "";
+    html += '<section class="consultation-card">' +
+      '<div class="consultation-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v11H8l-4 3v-14Z"/><path d="M8 9h8M8 12h5"/></svg></div>' +
+      '<div class="consultation-copy"><h2>需要協助？</h2><p>留下 Email 與諮詢內容，方便股務團隊後續聯繫。</p></div>' +
+      '<button class="btn-primary" data-action="open-consultation-form" type="button">輸入諮詢</button>' +
+      '</section>';
+
     html += '<div class="stat-grid">';
     html += '<div class="stat-tile"><span class="stat-num">' + openTasks.length + '</span><span class="stat-label">待辦事項</span></div>';
     html += '<div class="stat-tile' + (overdue.length ? ' stat-bad' : '') + '"><span class="stat-num">' + overdue.length + '</span><span class="stat-label">逾期項目</span></div>';
@@ -824,6 +863,14 @@
     document.getElementById("doc-note").value = "";
     document.getElementById("doc-dialog").showModal();
   }
+  function openConsultationForm(){
+    var dlg = document.getElementById("consultation-dialog");
+    document.getElementById("consult-email").value = "";
+    document.getElementById("consult-subject").value = "";
+    document.getElementById("consult-body").value = "";
+    dlg.showModal();
+  }
+
   function openAnnouncementForm(a){
     var dlg = document.getElementById("announcement-dialog");
     document.getElementById("announcement-dialog-title").textContent = a ? "編輯公告" : "發布公告";
@@ -851,6 +898,7 @@
     else if(action === "clear-date-filter"){ selectedDate = null; renderTasks(); }
     else if(action === "open-doc-upload") openDocUpload();
     else if(action === "delete-doc") deleteDoc(id);
+    else if(action === "open-consultation-form") openConsultationForm();
     else if(action === "open-announcement-form") openAnnouncementForm(null);
     else if(action === "edit-announcement") openAnnouncementForm(findAnnouncement(id));
     else if(action === "delete-announcement") deleteAnnouncement(id);
@@ -904,6 +952,41 @@
     if(!files.length) return;
     dlg.close();
     handleUpload(files, category, note);
+  });
+
+  document.getElementById("consultation-form").addEventListener("submit", function(e){
+    e.preventDefault();
+    var dlg = document.getElementById("consultation-dialog");
+    var data = {
+      email: document.getElementById("consult-email").value.trim(),
+      subject: document.getElementById("consult-subject").value.trim(),
+      body: document.getElementById("consult-body").value.trim(),
+      createdAt: new Date().toISOString(),
+      authorId: myId || null
+    };
+    if(!data.email || !data.subject || !data.body) return;
+
+    if(isLocalMode){
+      try{
+        var key = LOCAL_KEY + "_inquiries";
+        var list = JSON.parse(localStorage.getItem(key) || "[]");
+        list.push(Object.assign({ id: uid() }, data));
+        localStorage.setItem(key, JSON.stringify(list));
+        dlg.close();
+        alert("諮詢資料已送出。");
+      }catch(err){
+        alert("諮詢資料儲存失敗，請稍後再試。");
+      }
+      return;
+    }
+
+    if(!requireDb()) return;
+    db.collection("inquiries").add(data).then(function(){
+      dlg.close();
+      alert("諮詢資料已送出。");
+    }).catch(function(err){
+      alert("送出失敗：" + (err && err.message ? err.message : err));
+    });
   });
 
   document.getElementById("announcement-form").addEventListener("submit", function(e){
